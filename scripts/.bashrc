@@ -100,9 +100,6 @@ export LESS_TERMCAP_us=$'\E[01;32m'
 
 # Alias's to change the directory
 alias web='cd /var/www/html'
-alias config='cd ~/.config'
-alias down='cd ~/Downloads'
-alias rectaz='cd ~/Rectaz'
 
 # Alias's to mount ISO files
 # mount -o loop /home/NAMEOFISO.iso /home/ISOMOUNTDIR/
@@ -144,6 +141,8 @@ alias vi='nvim'
 alias svi='sudo vi'
 alias vis='nvim "+set si"'
 alias yayf="yay -Slq | fzf --multi --preview 'yay -Sii {1}' --preview-window=down:75% | xargs -ro yay -S"
+alias nala='sudo nala install'
+alias ls='eza'
 
 # Change directory aliases
 alias home='cd ~'
@@ -632,6 +631,23 @@ fi
 
 export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin"
 
+eval "$(starship init bash)"
+eval "$(zoxide init bash)"
+
+if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
+
+exec startx
+
+fi
+
+
+
+
+. "$HOME/.atuin/bin/env"
+
+[[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
+eval "$(atuin init bash)"
+
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/noirelab/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -646,13 +662,3 @@ else
 fi
 unset __conda_setup
 # <<< conda initialize <<<
-
-# STARSHIP AND ZOXIDE MUST BE LOADED AFTER CONDA
-eval "$(starship init bash)"
-eval "$(zoxide init bash)"
-
-if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then
-    exec startx
-fi
-
-. "$HOME/.cargo/env"

@@ -6,6 +6,9 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Get the directory where the script is located
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 # Function to ask Yes/No
 confirm() {
     while true; do
@@ -20,6 +23,7 @@ confirm() {
 
 echo -e "${BLUE}=== Interactive System Setup ===${NC}"
 echo "This script will pause at each step to ask for confirmation."
+echo "Script is running from: $SCRIPT_DIR"
 echo ""
 
 # ==============================================================================
@@ -38,9 +42,20 @@ fi
 # --- SECTION 2: APPLICATIONS ---
 # ==============================================================================
 
-# Alacritty
+# Kitty
 if confirm "Install kitty (Terminal)?"; then
     sudo apt install -y kitty
+
+    if [ -d "$SCRIPT_DIR/kitty" ]; then
+        echo -e "${GREEN}[+] Installing Kitty config...${NC}"
+        mkdir -p ~/.config/kitty
+        cp "$SCRIPT_DIR/kitty/Ayu.conf" ~/.config/kitty/
+        cp "$SCRIPT_DIR/kitty/current-theme.conf" ~/.config/kitty/
+        cp "$SCRIPT_DIR/kitty/kitty.conf" ~/.config/kitty/
+        echo "Kitty config files copied to ~/.config/kitty/"
+    else
+        echo -e "${YELLOW}Warning: 'kitty' directory not found in $SCRIPT_DIR/scripts. Skipping Kitty config.${NC}"
+    fi
 fi
 
 # Firefox
@@ -79,15 +94,64 @@ fi
 # Discord
 if confirm "Install Discord?"; then
     echo -e "${GREEN}[+] Installing Discord...${NC}"
-    wget -O /tmp/discord.deb "https://discord.com/api/download?platform=linux&format=deb"
-    sudo dpkg -i /tmp/discord.deb
-    sudo apt install -f -y # Fix dependencies
-    rm /tmp/discord.deb
+    if ! command -v discord &> /dev/null; then
+        wget -O /tmp/discord.deb "https://discord.com/api/download?platform=linux&format=deb"
+        sudo dpkg -i /tmp/discord.deb
+        sudo apt install -f -y # Fix dependencies
+        rm /tmp/discord.deb
+    else
+        echo "Discord is already installed."
+    fi
 fi
 
 # Nemo
 if confirm "Install Nemo (File Manager)?"; then
     sudo apt install -y nemo
+fi
+
+# ==============================================================================
+# --- SECTION 2.5: DEV TOOLS (Docker & Miniconda) ---
+# ==============================================================================
+
+# Docker
+if confirm "Install Docker (Engine + Compose)?"; then
+    echo -e "${GREEN}[+] Installing Docker...${NC}"
+
+    # 1. Add Docker's official GPG key:
+    sudo apt update
+    sudo apt install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+    # 2. Add the repository to Apt sources:
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    sudo apt update
+
+    # 3. Install packages
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    # 4. Post-install: Add user to docker group (avoids using sudo for docker)
+    echo -e "${GREEN}[+] Adding user '$USER' to the docker group...${NC}"
+    sudo usermod -aG docker $USER
+    echo -e "${YELLOW}NOTE: You may need to log out and back in for Docker group changes to take effect.${NC}"
+fi
+
+# Miniconda
+if confirm "Install Miniconda3?"; then
+    echo -e "${GREEN}[+] Installing Miniconda3...${NC}"
+    mkdir -p ~/miniconda3
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+    bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+    rm ~/miniconda3/miniconda.sh
+
+    # Init bash so conda command is available
+    echo -e "${GREEN}[+] Initializing conda for bash...${NC}"
+    ~/miniconda3/bin/conda init bash
 fi
 
 # ==============================================================================
@@ -156,8 +220,8 @@ update_shortcut_list() {
 
 echo -e "${BLUE}=== Native Shortcut Setup ===${NC}"
 
-# Install Dependencies (Still need wmctrl for window actions)
-sudo apt install -y wmctrl xdotool gnome-screenshot kitty btop
+# Install Dependencies (wmctrl for window actions)
+sudo apt install -y wmctrl xdotool gnome-screenshot btop
 
 if confirm "Overwrite all custom shortcuts with your config?"; then
 
@@ -209,3 +273,84 @@ if confirm "Overwrite all custom shortcuts with your config?"; then
 
     echo -e "${BLUE}Done! Check System Settings > Keyboard > Shortcuts to see them.${NC}"
 fi
+
+# ==============================================================================
+# --- SECTION 5: DOTFILE & CUSTOM SCRIPTS ---
+# ==============================================================================
+
+echo -e "${BLUE}=== Dotfile & Custom Scripts Setup ===${NC}"
+
+# --- Bashrc Configuration ---
+if confirm "Install custom .bashrc?"; then
+    if [ -f "$SCRIPT_DIR/scripts/.bashrc" ]; then
+        echo -e "${GREEN}[+] Installing .bashrc...${NC}"
+        # Backup existing .bashrc
+        if [ -f ~/.bashrc ]; then
+            BACKUP_FILE=~/.bashrc.bak_$(date +%F-%T)
+            echo "Backing up existing ~/.bashrc to $BACKUP_FILE"
+            mv ~/.bashrc "$BACKUP_FILE"
+        fi
+        cp "$SCRIPT_DIR/scripts/.bashrc" ~/.bashrc
+        echo -e "${YELLOW}Successfully installed .bashrc.${NC}"
+        echo -e "${YELLOW}Please run 'source ~/.bashrc' or restart your terminal to apply changes.${NC}"
+    else
+        echo -e "${YELLOW}Warning: '.bashrc' file not found in $SCRIPT_DIR. Skipping .bashrc install.${NC}"
+    fi
+fi
+
+# --- Opacify Windows Script ---
+if confirm "Install 'Opacify Windows' script (Transparency effects)?"; then
+    # Check dependencies again just in case
+    if ! dpkg -s xdotool wmctrl >/dev/null 2>&1; then
+         echo "Installing missing dependencies (xdotool, wmctrl)..."
+         sudo apt install -y xdotool wmctrl
+    fi
+
+    if [ -f "$SCRIPT_DIR/scripts/opacify_windows.sh" ]; then
+        echo -e "${GREEN}[+] Installing Opacify Windows...${NC}"
+
+        # 1. Prepare directories
+        mkdir -p ~/.local/bin
+        mkdir -p ~/.config/autostart
+
+        # 2. Copy Script & Make Executable
+        cp "$SCRIPT_DIR/scripts/opacify_windows.sh" ~/.local/bin/
+        chmod +x ~/.local/bin/opacify_windows.sh
+
+        # 3. Create Autostart Entry (.desktop file)
+        echo "[Desktop Entry]
+Type=Application
+Exec=$HOME/.local/bin/opacify_windows.sh
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=Opacify Windows
+Comment=Adjust window opacity based on focus" > ~/.config/autostart/opacify_windows.desktop
+
+        echo -e "-> Script copied to ~/.local/bin/"
+        echo -e "-> Autostart entry created in ~/.config/autostart/"
+
+        # 4. Run immediately?
+        if confirm "Start Opacify Windows now (so you don't have to reboot)?"; then
+            nohup ~/.local/bin/opacify_windows.sh >/dev/null 2>&1 &
+            echo "Opacify Windows started!"
+        fi
+    else
+        echo -e "${YELLOW}Warning: 'opacify_windows.sh' not found in $SCRIPT_DIR/scripts. Skipping.${NC}"
+    fi
+fi
+
+# ==============================================================================
+# --- SECTION 6: SHELL ENHANCEMENTS ---
+# ==============================================================================
+
+echo -e "${BLUE}=== Shell Enhancements ===${NC}"
+
+# --- Atuin ---
+if confirm "Install Atuin (better shell history)?"; then
+    echo -e "${GREEN}[+] Installing Atuin...${NC}"
+    bash <(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)
+fi
+
+echo ""
+echo -e "${BLUE}=== System Setup Complete ===${NC}"
