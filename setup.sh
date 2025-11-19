@@ -42,6 +42,9 @@ fi
 # --- SECTION 2: APPLICATIONS ---
 # ==============================================================================
 
+if confirm "Install common packages?"; then
+    sudo apt install git nala
+fi
 # Kitty
 if confirm "Install kitty (Terminal)?"; then
     sudo apt install -y kitty
