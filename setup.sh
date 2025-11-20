@@ -284,20 +284,33 @@ fi
 echo -e "${BLUE}=== Dotfile & Custom Scripts Setup ===${NC}"
 
 # --- Bashrc Configuration ---
-if confirm "Install custom .bashrc?"; then
+if confirm "Install custom .bashrc and starship.toml?"; then
+    # --- BASHRC SECTION ---
     if [ -f "$SCRIPT_DIR/scripts/.bashrc" ]; then
         echo -e "${GREEN}[+] Installing .bashrc...${NC}"
+
         # Backup existing .bashrc
         if [ -f ~/.bashrc ]; then
             BACKUP_FILE=~/.bashrc.bak_$(date +%F-%T)
             echo "Backing up existing ~/.bashrc to $BACKUP_FILE"
             mv ~/.bashrc "$BACKUP_FILE"
         fi
+
+        # FIX: Removed the extra quote at the end
         cp "$SCRIPT_DIR/scripts/.bashrc" ~/.bashrc
+
         echo -e "${YELLOW}Successfully installed .bashrc.${NC}"
         echo -e "${YELLOW}Please run 'source ~/.bashrc' or restart your terminal to apply changes.${NC}"
     else
-        echo -e "${YELLOW}Warning: '.bashrc' file not found in $SCRIPT_DIR. Skipping .bashrc install.${NC}"
+        echo -e "${YELLOW}Warning: '.bashrc' file not found in $SCRIPT_DIR/scripts. Skipping install.${NC}"
+    fi
+
+    if [ -f "$SCRIPT_DIR/scripts/starship.toml" ]; then
+        echo -e "${GREEN}[+] Installing starship.toml...${NC}"
+        cp "$SCRIPT_DIR/scripts/starship.toml" ~/.config/starship.toml
+        echo -e "${YELLOW}Successfully installed starship.toml.${NC}"
+    else
+         echo -e "${YELLOW}Warning: starship.toml not found.${NC}"
     fi
 fi
 
@@ -354,6 +367,7 @@ if confirm "Install Atuin (better shell history)?"; then
     echo -e "${GREEN}[+] Installing Atuin...${NC}"
     bash <(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)
 fi
+
 
 echo ""
 echo -e "${BLUE}=== System Setup Complete ===${NC}"
