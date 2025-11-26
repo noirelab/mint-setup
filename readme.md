@@ -67,3 +67,6 @@ The setup script will automatically install required dependencies:
 - gnome-screenshot: Screenshot functionality
 - btop: System monitoring
 - git, nala, curl, wget: System utilities
+
+## FUTURE FEATURES
+- OBS Studio
