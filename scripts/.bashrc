@@ -23,6 +23,13 @@ fi
 # EXPORTS
 #######################################################
 
+#export PATH=$PATH:/usr/local/go/bin
+
+export PATH="$PATH:/home/noirelab/.lmstudio/bin"
+
+export PATH=$PATH:$HOME/go/bin
+
+
 # Disable the bell
 if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
 
@@ -641,13 +648,6 @@ exec startx
 fi
 
 
-
-
-. "$HOME/.atuin/bin/env"
-
-[[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
-eval "$(atuin init bash)"
-
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/noirelab/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -662,3 +662,7 @@ else
 fi
 unset __conda_setup
 # <<< conda initialize <<<
+
+# Added by LM Studio CLI (lms)
+export PATH="$PATH:/home/noirelab/.lmstudio/bin"
+# End of LM Studio CLI section
