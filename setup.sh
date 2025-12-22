@@ -356,18 +356,5 @@ Comment=Adjust window opacity based on focus" > ~/.config/autostart/opacify_wind
     fi
 fi
 
-# ==============================================================================
-# --- SECTION 6: SHELL ENHANCEMENTS ---
-# ==============================================================================
-
-echo -e "${BLUE}=== Shell Enhancements ===${NC}"
-
-# --- Atuin ---
-if confirm "Install Atuin (better shell history)?"; then
-    echo -e "${GREEN}[+] Installing Atuin...${NC}"
-    bash <(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)
-fi
-
-
 echo ""
 echo -e "${BLUE}=== System Setup Complete ===${NC}"

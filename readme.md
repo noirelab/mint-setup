@@ -13,7 +13,6 @@ This repository contains configuration files and scripts for setting up a custom
     - btop: System Monitor
     - Docker: Containerization platform (Engine + Compose)
     - Miniconda3: Python package and environment manager
-    - Atuin: Better shell history
     - Windows Opacity: Opacify windows based on focus and state
 ## Configuration Files
     - `kitty/`: Kitty terminal configuration with Ayu theme
@@ -56,7 +55,6 @@ chmod +x setup.sh
 - Pre-configured keyboard shortcuts for productivity
 - Docker containerization with buildx and compose plugins
 - Miniconda3 for Python development
-- Atuin for enhanced shell history with sync capabilities
 - Interactive setup script with per-component installation
 - Automatic shortcut configuration for both GNOME and Cinnamon
 - Startup integration for window opacity effects
