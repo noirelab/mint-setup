@@ -21,7 +21,7 @@ confirm() {
     done
 }
 
-echo -e "${BLUE}=== Interactive System Setup ===${NC}"
+echo -e "${BLUE}=== Interactive System Setup (Debian/Mint) ===${NC}"
 echo "This script will pause at each step to ask for confirmation."
 echo "Script is running from: $SCRIPT_DIR"
 echo ""
@@ -55,9 +55,32 @@ fi
 # --- SECTION 2: APPLICATIONS ---
 # ==============================================================================
 
-if confirm "Install common packages?"; then
-    sudo apt install git nala
+if confirm "Install common packages (git, nala)?"; then
+    sudo apt install -y git nala
 fi
+
+# --- STARSHIP & FONTS (Must happen before Kitty config) ---
+if confirm "Install Starship Prompt & Nerd Fonts (Required for terminal theme)?"; then
+    # 1. Starship
+    if ! command -v starship &> /dev/null; then
+        echo -e "${GREEN}[+] Installing Starship...${NC}"
+        curl -sS https://starship.rs/install.sh | sh -s -- -y
+    fi
+
+    # 2. Nerd Fonts (FiraCode)
+    echo -e "${GREEN}[+] Installing Nerd Fonts (FiraCode)...${NC}"
+    mkdir -p ~/.local/share/fonts
+    cd ~/.local/share/fonts
+    # Download FiraCode Nerd Font
+    if [ ! -f "FiraCodeNerdFont-Regular.ttf" ]; then
+        wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraCode.zip
+        unzip -o FiraCode.zip
+        rm FiraCode.zip
+        fc-cache -fv
+    fi
+    cd "$SCRIPT_DIR"
+fi
+
 # Kitty
 if confirm "Install kitty (Terminal)?"; then
     sudo apt install -y kitty
@@ -83,10 +106,12 @@ fi
 if confirm "Install Visual Studio Code?"; then
     echo -e "${GREEN}[+] Installing VS Code...${NC}"
     if ! command -v code &> /dev/null; then
-        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-        sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-        sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-        rm -f packages.microsoft.gpg
+        if [ ! -f /etc/apt/sources.list.d/vscode.list ]; then
+            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+            sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+            sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+            rm -f packages.microsoft.gpg
+        fi
         sudo apt update
         sudo apt install -y code
     else
@@ -98,8 +123,10 @@ fi
 if confirm "Install Spotify?"; then
     echo -e "${GREEN}[+] Installing Spotify...${NC}"
     if ! command -v spotify &> /dev/null; then
-        curl -sS https://download.spotify.com/debian/pubkey_6224F9NNa.gpg | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/spotify.gpg
-        echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
+        if [ ! -f /etc/apt/sources.list.d/spotify.list ]; then
+            curl -sS https://download.spotify.com/debian/pubkey_6224F9NNa.gpg | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/spotify.gpg
+            echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
+        fi
         sudo apt update
         sudo apt install -y spotify-client
     else
@@ -126,7 +153,7 @@ if confirm "Install Nemo (File Manager)?"; then
 fi
 
 # ==============================================================================
-# --- SECTION 2.5: DEV TOOLS (Docker & Miniconda) ---
+# --- SECTION 2.5: DEV TOOLS (Docker, NVIDIA & Miniconda) ---
 # ==============================================================================
 
 # Docker
@@ -137,8 +164,10 @@ if confirm "Install Docker (Engine + Compose)?"; then
     sudo apt update
     sudo apt install -y ca-certificates curl
     sudo install -m 0755 -d /etc/apt/keyrings
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    if [ ! -f /etc/apt/keyrings/docker.asc ]; then
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+    fi
 
     # 2. Add the repository to Apt sources:
     echo \
@@ -151,10 +180,28 @@ if confirm "Install Docker (Engine + Compose)?"; then
     # 3. Install packages
     sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-    # 4. Post-install: Add user to docker group (avoids using sudo for docker)
+    # 4. Post-install: Add user to docker group
     echo -e "${GREEN}[+] Adding user '$USER' to the docker group...${NC}"
     sudo usermod -aG docker $USER
-    echo -e "${YELLOW}NOTE: You may need to log out and back in for Docker group changes to take effect.${NC}"
+fi
+
+# NVIDIA Container Toolkit (Essentials for ML/GPU)
+if confirm "Install NVIDIA Container Toolkit (Enable GPU support in Docker)?"; then
+    echo -e "${GREEN}[+] Installing NVIDIA Container Toolkit...${NC}"
+
+    # Add Repo
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+    && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+    sudo apt update
+    sudo apt install -y nvidia-container-toolkit
+
+    # Configure Docker
+    sudo nvidia-ctk runtime configure --runtime=docker
+    sudo systemctl restart docker
+    echo -e "${GREEN}[+] GPU Support configured!${NC}"
 fi
 
 # Miniconda
@@ -175,7 +222,6 @@ fi
 # ==============================================================================
 
 # --- SET SHORTCUT FUNCTION ---
-# This function injects a shortcut directly into the OS settings
 set_shortcut() {
     local name="$1"
     local command="$2"
@@ -187,14 +233,10 @@ set_shortcut() {
         # LINUX MINT (CINNAMON)
         SCHEMA="org.cinnamon.desktop.keybindings.custom-keybinding"
         PATH_PREFIX="/org/cinnamon/desktop/keybindings/custom-keybindings/custom${index}/"
-        LIST_SCHEMA="org.cinnamon.desktop.keybindings"
-        LIST_KEY="custom-list"
     else
         # UBUNTU (GNOME)
         SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
         PATH_PREFIX="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${index}/"
-        LIST_SCHEMA="org.gnome.settings-daemon.plugins.media-keys"
-        LIST_KEY="custom-keybindings"
     fi
 
     # 1. Define the custom shortcut properties
@@ -236,7 +278,7 @@ update_shortcut_list() {
 
 echo -e "${BLUE}=== Native Shortcut Setup ===${NC}"
 
-# Install Dependencies (wmctrl for window actions)
+# Install Dependencies (wmctrl for window actions, gnome-screenshot)
 sudo apt install -y wmctrl xdotool gnome-screenshot btop
 
 if confirm "Overwrite all custom shortcuts with your config?"; then
@@ -309,11 +351,9 @@ if confirm "Install custom .bashrc and starship.toml?"; then
             mv ~/.bashrc "$BACKUP_FILE"
         fi
 
-        # FIX: Removed the extra quote at the end
         cp "$SCRIPT_DIR/scripts/.bashrc" ~/.bashrc
 
         echo -e "${YELLOW}Successfully installed .bashrc.${NC}"
-        echo -e "${YELLOW}Please run 'source ~/.bashrc' or restart your terminal to apply changes.${NC}"
     else
         echo -e "${YELLOW}Warning: '.bashrc' file not found in $SCRIPT_DIR/scripts. Skipping install.${NC}"
     fi
@@ -371,3 +411,4 @@ fi
 
 echo ""
 echo -e "${BLUE}=== System Setup Complete ===${NC}"
+echo -e "${YELLOW}Please log out and log back in for Docker groups and Shortcut changes to take full effect.${NC}"
