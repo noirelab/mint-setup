@@ -30,12 +30,25 @@ echo ""
 # --- SECTION 1: SYSTEM UPDATE ---
 # ==============================================================================
 
-if confirm "Do you want to update system repositories and upgrade packages?"; then
-    echo -e "${GREEN}[+] Updating system...${NC}"
-    sudo apt update && sudo apt upgrade -y
+if confirm "Do you want to update package repository lists?"; then
+    echo -e "${GREEN}[+] Updating package lists...${NC}"
+    sudo apt update
+else
+    echo "Skipping repository update."
+fi
+
+if confirm "Do you want to upgrade all installed packages? (This can take a while)"; then
+    echo -e "${GREEN}[+] Upgrading all packages... (this may take several minutes)${NC}"
+    sudo apt upgrade -y
+else
+    echo "Skipping full system upgrade."
+fi
+
+if confirm "Install essential build tools (curl, wget, git, build-essential)?"; then
+    echo -e "${GREEN}[+] Installing essential tools...${NC}"
     sudo apt install -y curl wget git build-essential
 else
-    echo "Skipping system update."
+    echo "Skipping essential tools."
 fi
 
 # ==============================================================================
