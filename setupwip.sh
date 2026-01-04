@@ -1,0 +1,268 @@
+#!/bin/bash
+
+# --- COLORS & VARS ---
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+DISTRO=""
+
+# --- HELPER FUNCTIONS ---
+
+confirm() {
+    while true; do
+        read -p "$(echo -e ${YELLOW}"$1 (y/n): "${NC})" yn
+        case $yn in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
+
+detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        # DEBUG: Uncomment the next line if it still fails to see what your system reports
+        # echo "DEBUG: ID=$ID, ID_LIKE=$ID_LIKE"
+
+        # Added explicit check for "cachyos"
+        if [[ "$ID" == "arch" || "$ID" == "cachyos" || "$ID_LIKE" == *"arch"* ]]; then
+            DISTRO="arch"
+        elif [[ "$ID" == "debian" || "$ID" == "linuxmint" || "$ID_LIKE" == *"debian"* || "$ID_LIKE" == *"ubuntu"* ]]; then
+            DISTRO="debian"
+        fi
+    fi
+
+    if [ -z "$DISTRO" ]; then
+        echo -e "${RED}Error: Unsupported OS. Detected ID: $ID${NC}"
+        exit 1
+    fi
+    echo -e "${BLUE}=== Detected OS: $DISTRO ($ID) ===${NC}"
+}
+
+install_aur() {
+    # Arch Helper Function
+    if command -v paru &> /dev/null; then
+        paru -S --noconfirm "$1"
+    elif command -v yay &> /dev/null; then
+        yay -S --noconfirm "$1"
+    else
+        echo -e "${YELLOW}No AUR helper found. Installing yay...${NC}"
+        sudo pacman -S --needed --noconfirm git base-devel
+        git clone https://aur.archlinux.org/yay.git /tmp/yay
+        cd /tmp/yay && makepkg -si --noconfirm
+        cd "$SCRIPT_DIR"
+        yay -S --noconfirm "$1"
+    fi
+}
+
+# --- SHORTCUT HELPER (DEBIAN/MINT ONLY) ---
+set_gnome_shortcut() {
+    local name="$1"
+    local command="$2"
+    local binding="$3"
+    local index="$4"
+
+    if gsettings list-schemas | grep -q "org.cinnamon.desktop.keybindings"; then
+        SCHEMA="org.cinnamon.desktop.keybindings.custom-keybinding"
+        PATH_PREFIX="/org/cinnamon/desktop/keybindings/custom-keybindings/custom${index}/"
+    else
+        SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
+        PATH_PREFIX="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${index}/"
+    fi
+
+    gsettings set "$SCHEMA:$PATH_PREFIX" name "$name"
+    gsettings set "$SCHEMA:$PATH_PREFIX" command "$command"
+    gsettings set "$SCHEMA:$PATH_PREFIX" binding "['$binding']"
+    echo "    -> Set '$name' to '$binding'"
+}
+
+update_shortcut_list() {
+    local count="$1"
+    local list_string="["
+    for ((i=0; i<count; i++)); do
+        if [ "$i" -gt 0 ]; then list_string+=", "; fi
+        if gsettings list-schemas | grep -q "org.cinnamon.desktop.keybindings"; then
+             list_string+="'custom${i}'"
+        else
+             list_string+="'/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom${i}/'"
+        fi
+    done
+    list_string+="]"
+
+    if gsettings list-schemas | grep -q "org.cinnamon.desktop.keybindings"; then
+        gsettings set org.cinnamon.desktop.keybindings custom-list "$list_string"
+    else
+        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$list_string"
+    fi
+}
+
+# ==============================================================================
+# --- MAIN LOGIC ---
+# ==============================================================================
+
+detect_os
+
+# --- 1. SYSTEM UPDATE & TOOLS ---
+if confirm "Update System & Install Build Tools?"; then
+    echo -e "${GREEN}[+] Updating System...${NC}"
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -Syu --noconfirm
+        sudo pacman -S --needed --noconfirm base-devel git wget curl
+    else
+        sudo apt update && sudo apt upgrade -y
+        sudo apt install -y curl wget git build-essential
+    fi
+fi
+
+# --- 2. TERMINAL & SHELL (Common) ---
+if confirm "Install Kitty, Starship & Nerd Fonts?"; then
+    echo -e "${GREEN}[+] Installing Terminal Essentials...${NC}"
+
+    # Install Packages
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -S --noconfirm kitty starship ttf-firacode-nerd ttf-jetbrains-mono-nerd
+    else
+        sudo apt install -y kitty
+        # Starship manual install for Debian
+        if ! command -v starship &> /dev/null; then
+            curl -sS https://starship.rs/install.sh | sh -s -- -y
+        fi
+        # Fonts manual install for Debian
+        mkdir -p ~/.local/share/fonts
+        if [ ! -f ~/.local/share/fonts/FiraCodeNerdFont-Regular.ttf ]; then
+            wget -qO /tmp/FiraCode.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.1.1/FiraCode.zip
+            unzip -o /tmp/FiraCode.zip -d ~/.local/share/fonts
+            fc-cache -fv
+        fi
+    fi
+
+    # Configs (Shared)
+    echo -e "${GREEN}[+] Deploying Kitty & Starship Configs...${NC}"
+    mkdir -p ~/.config/kitty
+    cp -r "$SCRIPT_DIR/configs/common/kitty/"* ~/.config/kitty/ 2>/dev/null
+    cp "$SCRIPT_DIR/configs/common/starship.toml" ~/.config/starship.toml 2>/dev/null
+fi
+
+# --- 3. APPLICATIONS ---
+if confirm "Install Applications (Code, Spotify, Discord, Firefox)?"; then
+    echo -e "${GREEN}[+] Installing Apps...${NC}"
+
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -S --noconfirm firefox discord nemo
+        install_aur "visual-studio-code-bin"
+        install_aur "spotify"
+    else
+        # Debian/Ubuntu Logic
+        sudo apt install -y firefox nemo
+
+        # VS Code Repo
+        if ! command -v code &> /dev/null; then
+             wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+             sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+             sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+             rm packages.microsoft.gpg
+             sudo apt update && sudo apt install -y code
+        fi
+
+        # Spotify Repo
+        if ! command -v spotify &> /dev/null; then
+             curl -sS https://download.spotify.com/debian/pubkey_6224F9NNa.gpg | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/spotify.gpg
+             echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
+             sudo apt update && sudo apt install -y spotify-client
+        fi
+
+        # Discord
+        if ! command -v discord &> /dev/null; then
+            wget -O /tmp/discord.deb "https://discord.com/api/download?platform=linux&format=deb"
+            sudo dpkg -i /tmp/discord.deb
+            sudo apt install -f -y
+        fi
+    fi
+fi
+
+# --- 4. DEV TOOLS (Docker, Nvidia, Conda) ---
+if confirm "Install Dev Tools (Docker, Nvidia Toolkit, Miniconda)?"; then
+
+    # Docker
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -S --noconfirm docker docker-compose nvidia-container-toolkit
+        sudo systemctl enable --now docker.service
+        sudo nvidia-ctk runtime configure --runtime=docker
+        sudo systemctl restart docker
+    else
+        # Simple Ubuntu Docker install
+        sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin nvidia-container-toolkit
+        sudo usermod -aG docker $USER
+    fi
+    sudo usermod -aG docker $USER
+
+    # Miniconda (Shared)
+    if [ ! -d ~/miniconda3 ]; then
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3_install.sh
+        bash ~/miniconda3_install.sh -b -u -p ~/miniconda3
+        rm ~/miniconda3_install.sh
+        ~/miniconda3/bin/conda init bash
+    fi
+fi
+
+# --- 5. CONFIGURATION & SHORTCUTS (The Split Logic) ---
+echo -e "${BLUE}=== Configuring Desktop Environment ===${NC}"
+
+if [ "$DISTRO" == "arch" ]; then
+    # --- ARCH / HYPRLAND PATH ---
+    if confirm "Deploy Hyprland & Waybar Configs?"; then
+        echo -e "${GREEN}[+] Copying Arch Configs...${NC}"
+
+        # Install Hyprland Basics if missing
+        sudo pacman -S --noconfirm hyprland waybar rofi-wayland dunst polkit-kde-agent
+
+        # Copy Configs
+        mkdir -p ~/.config/hypr ~/.config/waybar ~/.config/rofi ~/.config/dunst
+        cp -r "$SCRIPT_DIR/configs/arch/hypr/"* ~/.config/hypr/ 2>/dev/null
+        cp -r "$SCRIPT_DIR/configs/arch/waybar/"* ~/.config/waybar/ 2>/dev/null
+        cp -r "$SCRIPT_DIR/configs/arch/rofi/"* ~/.config/rofi/ 2>/dev/null
+
+        echo "Hyprland configs deployed. Your shortcuts are defined in ~/.config/hypr/hyprland.conf"
+    fi
+
+else
+    # --- DEBIAN / MINT PATH ---
+    if confirm "Configure GNOME/Cinnamon Shortcuts?"; then
+        echo -e "${GREEN}[+] Setting up Keybindings...${NC}"
+        sudo apt install -y wmctrl xdotool gnome-screenshot btop
+
+        set_gnome_shortcut "Terminal" "kitty --start-as fullscreen" "<Super>Return" 0
+        set_gnome_shortcut "Discord" "discord" "<Super>slash" 1
+        set_gnome_shortcut "VS Code" "code" "<Super>v" 2
+        set_gnome_shortcut "Gemini" "xdg-open https://gemini.google.com" "<Super>g" 3
+        set_gnome_shortcut "Firefox" "firefox" "<Super>w" 4
+        set_gnome_shortcut "Spotify" "spotify" "<Super>s" 5
+        set_gnome_shortcut "btop" "kitty --start-as fullscreen -e btop" "<Ctrl><Shift>Escape" 6
+        set_gnome_shortcut "Screenshot" "gnome-screenshot -a" "<Super><Shift>s" 7
+        set_gnome_shortcut "Minimize" "xdotool getactivewindow windowminimize" "<Super>m" 11
+
+        update_shortcut_list 12
+        echo "Shortcuts registered!"
+
+        # Install Mint specific scripts if they exist
+        if [ -f "$SCRIPT_DIR/configs/mint/opacify_windows.sh" ]; then
+             cp "$SCRIPT_DIR/configs/mint/opacify_windows.sh" ~/.local/bin/
+             chmod +x ~/.local/bin/opacify_windows.sh
+        fi
+    fi
+fi
+
+# --- 6. DOTFILES (Bashrc) ---
+if confirm "Install .bashrc?"; then
+    cp "$SCRIPT_DIR/configs/common/.bashrc" ~/.bashrc
+    echo "Bashrc updated."
+fi
+
+echo ""
+echo -e "${BLUE}=== Setup Complete ===${NC}"
+echo "Please restart your computer/session."

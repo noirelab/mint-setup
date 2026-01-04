@@ -1,0 +1,114 @@
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    font: "JetBrains Mono Nerd Font Bold 12";
+    display-drun: "Apps";
+    display-run: "Run";
+    display-window: "Win";
+    drun-display-format: "{name}";
+}
+
+/* GLOBAL VARIABLES - Based on your Waybar Colors */
+* {
+    /* Matches 'window#waybar' text color */
+    fg: #cdd6f4;
+
+    /* Matches the '#workspaces' background */
+    bg: #1e1e2e;
+
+    /* Matches '#taskbar button.active' background */
+    bg-alt: #313244;
+
+    /* Matches '#workspaces button.active' text color */
+    accent: #cba6f7;
+
+    /* Matches '#workspaces' border */
+    border-col: #11111b;
+
+    background-color: @bg;
+    text-color: @fg;
+
+    border: 0;
+    margin: 0;
+    padding: 0;
+    spacing: 0;
+}
+
+window {
+    width: 45%;
+    /* Matches your #workspaces border-radius */
+    border-radius: 15px;
+
+    /* Matches your #workspaces border */
+    border: 2px;
+    border-color: @border-col;
+
+    padding: 20px;
+    background-color: @bg;
+}
+
+mainbox {
+    background-color: @bg;
+    children: [inputbar, listview];
+}
+
+inputbar {
+    children: [prompt, entry];
+    background-color: @bg;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 0 0 10px 0;
+}
+
+prompt {
+    background-color: @accent;
+    text-color: @bg; /* Dark text on the bright accent pill */
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 0 10px 0 0;
+}
+
+entry {
+    background-color: @bg-alt; /* Slightly lighter input background */
+    text-color: @fg;
+    placeholder: "Search...";
+    padding: 8px 12px;
+    border-radius: 10px;
+}
+
+listview {
+    border: 0px;
+    padding: 5px 0 0 0;
+    margin: 0px;
+    columns: 1;
+    background-color: @bg;
+    lines: 8;
+}
+
+element {
+    padding: 8px 12px;
+    margin: 2px 0;
+    background-color: transparent;
+    text-color: @fg;
+    /* Matches your #taskbar button border-radius */
+    border-radius: 10px;
+}
+
+element selected {
+    /* Matches your #taskbar button:hover background */
+    background-color: @bg-alt;
+    /* Matches your #workspaces button.active color */
+    text-color: @accent;
+}
+
+element-icon {
+    size: 24px;
+    margin: 0 10px 0 0;
+    background-color: transparent;
+}
+
+element-text {
+    vertical-align: 0.5;
+    background-color: transparent;
+    text-color: inherit;
+}

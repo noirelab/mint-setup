@@ -1,0 +1,82 @@
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrains Mono Nerd Font", monospace;
+    font-weight: bold;
+    font-size: 14px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(21, 18, 27, 0); /* Fully transparent background */
+    color: #cdd6f4;
+}
+
+tooltip {
+    background: #1e1e2e;
+    border-radius: 10px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: #11111b;
+}
+
+/* The "Pill" Containers */
+#workspaces, #clock, #tray, #battery, #taskbar {
+    background: #1e1e2e; /* Dark grey pill color */
+    opacity: 0.9;
+    padding: 5px 15px;
+    margin: 6px 4px; /* Floating margin */
+    border-radius: 15px; /* Rounded corners */
+    border: 1px solid #11111b;
+}
+#cpu, #memory, #temperature, #disk {
+    background: #1e1e2e; /* Dark grey pill color */
+    opacity: 0.9;
+    padding: 5px 10px;
+    margin: 6px 4px; /* Floating margin */
+    border-radius: 15px; /* Rounded corners */
+    border: 1px solid #11111b;
+}
+
+/* Taskbar specific styling */
+#taskbar button {
+    padding: 0 5px;
+    border-radius: 10px;
+}
+
+#taskbar button.active {
+    background-color: #313244;
+    border-bottom: 2px solid #cba6f7;
+}
+
+#taskbar button:hover {
+    background: #313244;
+}
+
+/* Workspaces specific */
+#workspaces button {
+    padding: 0 5px;
+    color: #a6adc8;
+}
+
+#workspaces button.active {
+    color: #cba6f7;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#battery.charging, #battery.plugged {
+    color: #a6e3a1;
+}
+
+#battery.critical:not(.charging) {
+    background-color: #f38ba8;
+    color: #bf5656;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
