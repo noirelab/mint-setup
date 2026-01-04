@@ -257,10 +257,270 @@ else
     fi
 fi
 
+install_sddm_theme() {
+    echo ":: Installing SDDM Theme and Dependencies..."
+    # 1. Install packages
+    if command -v yay &> /dev/null; then
+        yay -S --noconfirm simple-sddm-theme-2-git qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg
+    else
+        echo "Error: yay is not installed. Skipping SDDM theme."
+        return
+    fi
+
+    # 2. Configure SDDM to use the theme
+    echo ":: Configuring /etc/sddm.conf..."
+    sudo bash -c 'cat > /etc/sddm.conf <<EOF
+[Theme]
+Current=simple-sddm-2
+
+[General]
+InputMethod=qtvirtualkeyboard
+EOF'
+
+    # 3. Setup Wallpaper
+    # We look for the wallpaper relative to this script
+    WALLPAPER_SRC="./configs/common/wallpapers/wallpaper.jpg"
+    THEME_DIR="/usr/share/sddm/themes/simple-sddm-2"
+
+    if [ -f "$WALLPAPER_SRC" ]; then
+        echo ":: Copying wallpaper to SDDM theme..."
+        # Create background folder just in case
+        sudo mkdir -p "$THEME_DIR/Backgrounds"
+        # Copy to MAIN folder (where the theme actually looks)
+        sudo cp "$WALLPAPER_SRC" "$THEME_DIR/wallpaper.jpg"
+    else
+        echo "WARNING: Wallpaper not found at $WALLPAPER_SRC"
+    fi
+
+    # 4. Apply Catppuccin Colors (The Dark Grey/Lavender config)
+    echo ":: Applying Custom Colors..."
+    sudo bash -c "cat > $THEME_DIR/theme.conf <<EOF
+[General]
+ScreenWidth=\"1920\"
+ScreenHeight=\"1080\"
+FontSize=\"13\"
+KeyboardSize=\"0.4\"
+RoundCorners=\"20\"
+HourFormat=\"HH:mm\"
+DateFormat=\"dddd d MMMM\"
+
+[Background]
+Background=\"wallpaper.jpg\"
+BackgroundPlaceholder=\"\"
+BackgroundSpeed=\"\"
+PauseBackground=\"\"
+DimBackground=\"0.0\"
+CropBackground=\"true\"
+BackgroundHorizontalAlignment=\"center\"
+BackgroundVerticalAlignment=\"center\"
+
+[Colors]
+HeaderTextColor=\"#cdd6f4\"
+DateTextColor=\"#cdd6f4\"
+TimeTextColor=\"#cdd6f4\"
+FormBackgroundColor=\"#1e1e2e\"
+BackgroundColor=\"#1e1e2e\"
+DimBackgroundColor=\"#1e1e2e\"
+LoginFieldBackgroundColor=\"#181825\"
+PasswordFieldBackgroundColor=\"#181825\"
+LoginFieldTextColor=\"#cba6f7\"
+PasswordFieldTextColor=\"#cba6f7\"
+UserIconColor=\"#cba6f7\"
+PasswordIconColor=\"#cba6f7\"
+PlaceholderTextColor=\"#a6adc8\"
+WarningColor=\"#f38ba8\"
+LoginButtonTextColor=\"#cba6f7\"
+LoginButtonBackgroundColor=\"#1e1e2e\"
+SystemButtonsIconsColor=\"#cba6f7\"
+SessionButtonTextColor=\"#cba6f7\"
+VirtualKeyboardButtonTextColor=\"#cba6f7\"
+DropdownTextColor=\"#cdd6f4\"
+DropdownSelectedBackgroundColor=\"#cba6f7\"
+DropdownBackgroundColor=\"#1e1e2e\"
+HighlightTextColor=\"#1e1e2e\"
+HighlightBackgroundColor=\"#cba6f7\"
+HighlightBorderColor=\"#cba6f7\"
+HoverUserIconColor=\"#f5c2e7\"
+HoverPasswordIconColor=\"#f5c2e7\"
+HoverSystemButtonsIconsColor=\"#f5c2e7\"
+HoverSessionButtonTextColor=\"#f5c2e7\"
+HoverVirtualKeyboardButtonTextColor=\"#f5c2e7\"
+
+[Form]
+PartialBlur=\"true\"
+FullBlur=\"\"
+BlurMax=\"32\"
+Blur=\"\"
+HaveFormBackground=\"false\"
+FormPosition=\"left\"
+
+[VirtualKeyboard]
+VirtualKeyboardPosition=\"center\"
+
+[Interface]
+HideVirtualKeyboard=\"false\"
+HideSystemButtons=\"false\"
+HideLoginButton=\"false\"
+ForceLastUser=\"true\"
+PasswordFocus=\"true\"
+HideCompletePassword=\"true\"
+AllowEmptyPassword=\"false\"
+AllowUppercaseLettersInUsernames=\"false\"
+BypassSystemButtonsChecks=\"false\"
+RightToLeftLayout=\"false\"
+
+[Translation]
+TranslatePlaceholderUsername=\"\"
+TranslatePlaceholderPassword=\"\"
+TranslateLogin=\"\"
+TranslateLoginFailedWarning=\"\"
+TranslateCapslockWarning=\"\"
+TranslateSuspend=\"\"
+TranslateHibernate=\"\"
+TranslateReboot=\"\"
+TranslateShutdown=\"\"
+TranslateSessionSelection=\"\"
+TranslateVirtualKeyboardButtonOn=\"\"
+TranslateVirtualKeyboardButtonOff=\"\"
+EOF"
+}
+
+
+install_hyprlock() {
+    echo ":: Setting up Lock Screen (Hyprlock & Hypridle)..."
+
+    # 1. Install Packages (Arch only)
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -S --noconfirm hyprlock hypridle
+    fi
+
+    # 2. Ensure Wallpaper is in the right place for the User
+    # We copy the setup wallpaper to the user's Pictures folder so config finds it
+    WALLPAPER_SRC="./configs/common/wallpapers/wallpaper.jpg"
+    DEST_DIR="$HOME/Pictures"
+    mkdir -p "$DEST_DIR"
+
+    if [ -f "$WALLPAPER_SRC" ]; then
+        cp "$WALLPAPER_SRC" "$DEST_DIR/wallpaper.jpg"
+        echo ":: Wallpaper copied to $DEST_DIR/wallpaper.jpg"
+    else
+        echo "WARNING: Wallpaper source not found. Lock screen might be black."
+    fi
+
+    # 3. Write hyprlock.conf (Visuals - With Nvidia Fix)
+    echo ":: Generating ~/.config/hypr/hyprlock.conf..."
+    cat > "$HOME/.config/hypr/hyprlock.conf" <<EOF
+general {
+    hide_cursor = true
+    no_fade_in = false
+    disable_loading_bar = true
+}
+
+background {
+    monitor =
+    path = $HOME/Pictures/wallpaper.jpg
+    color = rgba(25, 20, 20, 1.0)
+
+    # NVIDIA FIX: BLUR DISABLED
+    blur_passes = 0
+    blur_size = 0
+}
+
+label {
+    monitor =
+    text = cmd[update:1000] echo "\$(date +"%H:%M")"
+    color = rgba(205, 214, 244, 1.0)
+    font_size = 100
+    font_family = JetBrains Mono Nerd Font ExtraBold
+    position = 0, 100
+    halign = center
+    valign = center
+}
+
+label {
+    monitor =
+    text = cmd[update:1000] echo "\$(date +"%A, %d %B %Y")"
+    color = rgba(205, 214, 244, 1.0)
+    font_size = 22
+    font_family = JetBrains Mono Nerd Font Bold
+    position = 0, 10
+    halign = center
+    valign = center
+}
+
+input-field {
+    monitor =
+    size = 250, 50
+    outline_thickness = 3
+    dots_size = 0.33
+    dots_spacing = 0.15
+    dots_center = true
+    outer_color = rgb(203, 166, 247)
+    inner_color = rgb(30, 30, 46)
+    font_color = rgb(205, 214, 244)
+    fade_on_empty = true
+    placeholder_text = <i>Input Password...</i>
+    hide_input = false
+    position = 0, -100
+    halign = center
+    valign = center
+}
+EOF
+
+    # 4. Write hypridle.conf (Triggers)
+    echo ":: Generating ~/.config/hypr/hypridle.conf..."
+    cat > "$HOME/.config/hypr/hypridle.conf" <<EOF
+general {
+    lock_cmd = pidof hyprlock || hyprlock
+    before_sleep_cmd = loginctl lock-session
+    after_sleep_cmd = hyprctl dispatch dpms on
+}
+
+listener {
+    timeout = 150
+    on-timeout = brightnessctl -s set 10
+    on-resume = brightnessctl -r
+}
+
+listener {
+    timeout = 300
+    on-timeout = loginctl lock-session
+}
+
+listener {
+    timeout = 330
+    on-timeout = hyprctl dispatch dpms off
+    on-resume = hyprctl dispatch dpms on
+}
+EOF
+
+    # 5. Add to Hyprland Autostart
+    HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
+    if grep -q "hypridle" "$HYPR_CONF"; then
+        echo ":: hypridle already in autostart."
+    else
+        echo ":: Adding hypridle to Hyprland autostart..."
+        echo "" >> "$HYPR_CONF"
+        echo "# Auto-Lock Logic" >> "$HYPR_CONF"
+        echo "exec-once = hypridle" >> "$HYPR_CONF"
+    fi
+}
+
 # --- 6. DOTFILES (Bashrc) ---
 if confirm "Install .bashrc?"; then
     cp "$SCRIPT_DIR/configs/common/.bashrc" ~/.bashrc
     echo "Bashrc updated."
+fi
+
+# ... inside the if [ "$DISTRO" == "arch" ] block ...
+
+if confirm "Install & Configure SDDM Theme?"; then
+    install_sddm_theme
+fi
+
+# ADD THIS:
+if confirm "Install Hyprlock & Hypridle?"; then
+    install_hyprlock
 fi
 
 echo ""
