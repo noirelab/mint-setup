@@ -9,14 +9,16 @@
     "modules-left": [
         "clock",
         "hyprland/workspaces",
-        "hyprland/window"
+        "custom/window"
     ],
     "modules-center": ["wlr/taskbar"],
     "modules-right": [
         "tray",
         "cpu",
         "memory",
-        "temperature"
+        "temperature",
+        "pulseaudio",
+        "custom/power"
     ],
 
     "wlr/taskbar": {
@@ -54,14 +56,14 @@
         }
     },
     "cpu": {
-        "format": "󰘚 {usage}%",
+        "format": "󰘚  {usage}%",
         "tooltip": true,
         "interval": 0.5,
         "on-click": "kitty -e btop"
     },
 
     "memory": {
-        "format": "󰍛 {}%",
+        "format": "󰍛  {}%",
         "interval": 1,
         "on-click": "kitty -e btop"
     },
@@ -73,14 +75,25 @@
         "on-click": "kitty -e btop"
     },
 
-    "hyprland/window": {
-    "format": "{}",
-    "max-length": 50,
-    "separate-outputs": true,
-    "rewrite": {
-        "(.*) - Mozilla Firefox": "🌎 $1",
-        "(.*) - Visual Studio Code": "💻 $1",
-        "(.*) - Discord": "💬 Discord"
+    "custom/window": {
+        "exec": "/home/noirelab/.config/waybar/scripts/window.sh",
+        "return-type": "json",
+        "format": "{}",
+        "interval": 1,
+        "max-length": 50
+    },
+
+    "pulseaudio": {
+        "format": "<span color='#fab387'>{icon}</span> {volume}%",
+        "format-muted": "󰝟 Muted",
+        "format-icons": {
+            "default": ["", "", ""]
+        }
+    },
+
+    "custom/power": {
+        "format": "<span color='#f38ba8'>⏻</span>",
+        "on-click": "wlogout -b 2",
+        "tooltip": false
     }
-}
 }

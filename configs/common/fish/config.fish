@@ -33,6 +33,14 @@ function cd
     ls
 end
 
+#auto 'cd' after 'code'
+function code
+    command code $argv
+    if test (count $argv) -gt 0
+        cd $argv[1]
+    end
+end
+
 #######################################################
 # INITIALIZATION
 #######################################################

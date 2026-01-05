@@ -1,8 +1,8 @@
 * {
     border: none;
     border-radius: 0;
-    font-family: "JetBrains Mono Nerd Font", monospace;
-    font-weight: bold;
+    font-family: "Inter", "Symbols Nerd Font", sans-serif;
+    font-weight: 700;
     font-size: 14px;
     min-height: 0;
 }
@@ -25,17 +25,24 @@ tooltip {
     background: #1e1e2e; /* Dark grey pill color */
     opacity: 0.9;
     padding: 5px 15px;
-    margin: 6px 4px; /* Floating margin */
+    margin: 6px 10px; /* Floating margin */
     border-radius: 15px; /* Rounded corners */
     border: 1px solid #11111b;
 }
-#cpu, #memory, #temperature, #disk {
+
+
+#cpu, #memory, #temperature, #disk, #pulseaudio, #custom-power {
     background: #1e1e2e; /* Dark grey pill color */
     opacity: 0.9;
     padding: 5px 10px;
-    margin: 6px 4px; /* Floating margin */
+    margin: 6px 10px; /* Floating margin */
     border-radius: 15px; /* Rounded corners */
     border: 1px solid #11111b;
+}
+
+#custom-power {
+    padding: 5px 12px;
+    font-size: 16px;
 }
 
 /* Taskbar specific styling */
@@ -67,7 +74,7 @@ tooltip {
     -gtk-icon-effect: dim;
 }
 
-#battery.charging, #battery.plugged {
+/* #battery.charging, #battery.plugged {
     color: #a6e3a1;
 }
 
@@ -79,15 +86,46 @@ tooltip {
     animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: alternate;
-}
+} */
 
-#window {
-    background: #313244;       /* Lighter Grey (Surface0) */
-    color: #cdd6f4;            /* Text Color */
+/* Base Style for the Pill */
+#custom-window {
+    background: #1e1e2e;
+    color: #cdd6f4;
     padding: 5px 15px;
     margin: 6px 4px;
     border-radius: 15px;
-    /* border: 1px solid #cba6f7; Optional: Changed border to Lavender to make it pop */
-    font-weight: bold;
-    opacity: 0.9;
+    border: 1px solid #11111b;
+    transition: all 0.3s ease;
+}
+
+/* App-Specific Backgrounds */
+#custom-window.firefox {
+    background-color: #fab387;
+    color: #11111b;
+}
+
+#custom-window.code {
+    background-color: #89dceb;
+    color: #11111b;
+}
+
+#custom-window.discord {
+    background-color: #b4befe;
+    color: #11111b;
+}
+
+#custom-window.spotify {
+    background-color: #a6e3a1;
+    color: #11111b;
+}
+
+#custom-window.kitty {
+    background-color: #cdd6f4;
+    color: #11111b;
+}
+
+#custom-window.default {
+    background: #1e1e2e;
+    color: #cdd6f4;
 }
