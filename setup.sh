@@ -146,6 +146,20 @@ if confirm "Install Kitty, Starship & Nerd Fonts?"; then
     mkdir -p ~/.config/kitty
     cp -r "$SCRIPT_DIR/configs/common/kitty/"* ~/.config/kitty/ 2>/dev/null
     cp "$SCRIPT_DIR/configs/common/starship.toml" ~/.config/starship.toml 2>/dev/null
+
+    # Deploy Fish config
+    if [ -f "$SCRIPT_DIR/configs/common/fish/config.fish" ]; then
+        mkdir -p ~/.config/fish
+        cp "$SCRIPT_DIR/configs/common/fish/config.fish" ~/.config/fish/config.fish
+        echo "    - Fish config deployed."
+    fi
+
+    # Deploy wallpapers
+    if [ -d "$SCRIPT_DIR/configs/common/wallpapers" ]; then
+        mkdir -p ~/.config/wallpapers
+        cp -r "$SCRIPT_DIR/configs/common/wallpapers/"* ~/.config/wallpapers/ 2>/dev/null
+        echo "    - Wallpapers deployed to ~/.config/wallpapers/"
+    fi
 fi
 
 # --- 3. APPLICATIONS ---
@@ -407,65 +421,8 @@ install_hyprlock() {
         echo "WARNING: Wallpaper source not found. Lock screen might be black."
     fi
 
-    # 3. Write hyprlock.conf (Visuals - With Nvidia Fix)
-    echo ":: Generating ~/.config/hypr/hyprlock.conf..."
-    cat > "$HOME/.config/hypr/hyprlock.conf" <<EOF
-general {
-    hide_cursor = true
-    no_fade_in = false
-    disable_loading_bar = true
-}
-
-background {
-    monitor =
-    path = $HOME/Pictures/wallpaper.jpg
-    color = rgba(25, 20, 20, 1.0)
-
-    # NVIDIA FIX: BLUR DISABLED
-    blur_passes = 0
-    blur_size = 0
-}
-
-label {
-    monitor =
-    text = cmd[update:1000] echo "\$(date +"%H:%M")"
-    color = rgba(205, 214, 244, 1.0)
-    font_size = 100
-    font_family = JetBrains Mono Nerd Font ExtraBold
-    position = 0, 100
-    halign = center
-    valign = center
-}
-
-label {
-    monitor =
-    text = cmd[update:1000] echo "\$(date +"%A, %d %B %Y")"
-    color = rgba(205, 214, 244, 1.0)
-    font_size = 22
-    font_family = JetBrains Mono Nerd Font Bold
-    position = 0, 10
-    halign = center
-    valign = center
-}
-
-input-field {
-    monitor =
-    size = 250, 50
-    outline_thickness = 3
-    dots_size = 0.33
-    dots_spacing = 0.15
-    dots_center = true
-    outer_color = rgb(203, 166, 247)
-    inner_color = rgb(30, 30, 46)
-    font_color = rgb(205, 214, 244)
-    fade_on_empty = true
-    placeholder_text = <i>Input Password...</i>
-    hide_input = false
-    position = 0, -100
-    halign = center
-    valign = center
-}
-EOF
+    # 3. Skip hyprlock.conf generation - using custom config from repo
+    echo ":: Using custom hyprlock.conf from repo (already copied)"
 
     # 4. Write hypridle.conf (Triggers)
     echo ":: Generating ~/.config/hypr/hypridle.conf..."
