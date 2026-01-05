@@ -113,9 +113,19 @@ if confirm "Update System & Install Build Tools?"; then
     if [ "$DISTRO" == "arch" ]; then
         sudo pacman -Syu --noconfirm
         sudo pacman -S --needed --noconfirm base-devel git wget curl
+        sudo pacman -S --needed --noconfirm swww grim slurp wl-clipboard brightnessctl playerctl
     else
         sudo apt update && sudo apt upgrade -y
         sudo apt install -y curl wget git build-essential
+    fi
+fi
+
+if confirm "Install gaming packages and optimizations?"; then
+    echo -e "${GREEN}[+] Installing Gaming Packages...${NC}"
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications
+    else
+        sudo apt install -y steam lutris mangohud
     fi
 fi
 
