@@ -44,10 +44,3 @@ starship init fish | source
 if test -f /home/noirelab/miniconda3/bin/conda
     eval /home/noirelab/miniconda3/bin/conda "shell.fish" "hook" $argv | source
 end
-
-# Auto-start X if on TTY1
-if status is-login
-    if test -z "$DISPLAY" -a "$XDG_VTNR" = 1
-        exec startx
-    end
-end
