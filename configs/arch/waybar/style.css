@@ -80,3 +80,14 @@ tooltip {
     animation-iteration-count: infinite;
     animation-direction: alternate;
 }
+
+#window {
+    background: #313244;       /* Lighter Grey (Surface0) */
+    color: #cdd6f4;            /* Text Color */
+    padding: 5px 15px;
+    margin: 6px 4px;
+    border-radius: 15px;
+    /* border: 1px solid #cba6f7; Optional: Changed border to Lavender to make it pop */
+    font-weight: bold;
+    opacity: 0.9;
+}

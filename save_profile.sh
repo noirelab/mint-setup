@@ -6,33 +6,45 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Saving configuration to $REPO_DIR..."
 
-# --- 1. SAVE COMMON CONFIGS (Kitty, Bash, Starship) ---
+# Create base directories if they don't exist
+mkdir -p "$REPO_DIR/configs/common/fish"
+mkdir -p "$REPO_DIR/configs/common/kitty"
+mkdir -p "$REPO_DIR/configs/arch/hypr"
+mkdir -p "$REPO_DIR/configs/arch/waybar"
+
+# --- 1. SAVE COMMON CONFIGS (Kitty, Fish, Starship) ---
 echo "[+] Backing up Common Configs..."
+
+# Backup Kitty
 cp -r ~/.config/kitty/* "$REPO_DIR/configs/common/kitty/" 2>/dev/null
+
+# Backup Starship
 cp ~/.config/starship.toml "$REPO_DIR/configs/common/starship.toml"
-cp ~/.bashrc "$REPO_DIR/configs/common/.bashrc"
 
-# --- 2. DETECT OS AND SAVE SPECIFIC CONFIGS ---
-if [ -f /etc/arch-release ]; then
-    echo "[+] Arch Linux Detected - Saving Hyprland specific files..."
-
-    # Create folders if they don't exist
-    mkdir -p "$REPO_DIR/configs/arch/hypr"
-    mkdir -p "$REPO_DIR/configs/arch/waybar"
-    mkdir -p "$REPO_DIR/configs/arch/rofi"
-
-    # Copy files
-    cp -r ~/.config/hypr/* "$REPO_DIR/configs/arch/hypr/"
-    cp -r ~/.config/waybar/* "$REPO_DIR/configs/arch/waybar/"
-    cp -r ~/.config/rofi/* "$REPO_DIR/configs/arch/rofi/" # Uncomment if you use rofi
-
-    echo "Arch config saved."
-
-elif grep -q "Linux Mint" /etc/os-release; then
-    echo "[+] Linux Mint Detected - Saving Cinnamon specific files..."
-    # If you have specific Mint files (like opacity scripts), copy them here
-    # cp ~/some/script.sh "$REPO_DIR/configs/mint/"
-    echo "Mint config saved."
+# Backup Fish (Replacing .bashrc)
+if [ -f ~/.config/fish/config.fish ]; then
+    cp ~/.config/fish/config.fish "$REPO_DIR/configs/common/fish/config.fish"
+    echo "    - Fish config saved."
 fi
 
+# --- 2. DETECT OS AND SAVE SPECIFIC CONFIGS ---
+if [ -f /etc/arch-release ] || [ -f /etc/cachyos-release ]; then
+    echo "[+] Arch/CachyOS Detected - Saving Hyprland specific files..."
+
+    # Copy Hyprland folder
+    if [ -d ~/.config/hypr ]; then
+        cp -r ~/.config/hypr/* "$REPO_DIR/configs/arch/hypr/"
+        echo "    - Hyprland folder saved."
+    fi
+
+    # Copy Waybar (since it matches your Starship palette)
+    if [ -d ~/.config/waybar ]; then
+        cp -r ~/.config/waybar/* "$REPO_DIR/configs/arch/waybar/"
+        echo "    - Waybar folder saved."
+    fi
+
+    echo "Arch/CachyOS specific configs saved."
+fi
+
+echo "-------------------------------------------"
 echo "Backup complete! You can now git push."

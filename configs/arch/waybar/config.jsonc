@@ -8,7 +8,8 @@
     "height": 0,
     "modules-left": [
         "clock",
-        "hyprland/workspaces"
+        "hyprland/workspaces",
+        "hyprland/window"
     ],
     "modules-center": ["wlr/taskbar"],
     "modules-right": [
@@ -18,9 +19,6 @@
         "temperature"
     ],
 
-    "hyprland/window": {
-        "format": "{}"
-    },
     "wlr/taskbar": {
         "format": "{icon}",
         "icon-size": 24,
@@ -73,5 +71,16 @@
         "format": "{icon} {temperatureC}°C",
         "format-icons": ["󱃃", "󰔏", "󱃂"],
         "on-click": "kitty -e btop"
+    },
+
+    "hyprland/window": {
+    "format": "{}",
+    "max-length": 50,
+    "separate-outputs": true,
+    "rewrite": {
+        "(.*) - Mozilla Firefox": "🌎 $1",
+        "(.*) - Visual Studio Code": "💻 $1",
+        "(.*) - Discord": "💬 Discord"
     }
+}
 }
