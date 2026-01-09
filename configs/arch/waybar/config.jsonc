@@ -14,9 +14,9 @@
     "modules-center": ["wlr/taskbar"],
     "modules-right": [
         "tray",
-        "cpu",
-        "memory",
-        "temperature",
+        "custom/cpu",
+        //"memory",
+        "custom/gpu",
         "pulseaudio",
         "custom/power"
     ],
@@ -39,8 +39,9 @@
         }
     },
     "clock": {
-        "format": "{:%I:%M %p}",
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+        "format": "{:%B %d - %I:%M %p}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        "on-click": "gsimplecal"
     },
     "hyprland/workspaces": {
         "disable-scroll": true,
@@ -68,11 +69,18 @@
         "on-click": "kitty -e btop"
     },
 
-    "temperature": {
-        "critical-threshold": 80,
-        "format": "{icon} {temperatureC}°C",
-        "format-icons": ["󱃃", "󰔏", "󱃂"],
+    "custom/cpu": {
+        "exec": "/home/noirelab/.config/waybar/scripts/cpu.sh",
+        "return-type": "json",
+        "interval": 1,
         "on-click": "kitty -e btop"
+    },
+
+    "custom/gpu": {
+        "exec": "~/.config/waybar/scripts/gpu.sh",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "kitty -e nvtop" // nvtop is great for watching AI/ML tasks
     },
 
     "custom/window": {
@@ -84,7 +92,7 @@
     },
 
     "pulseaudio": {
-        "format": "<span color='#fab387'>{icon}</span> {volume}%",
+        "format": "<span color='#fab387'>{icon}</span>  {volume}%",
         "format-muted": "󰝟 Muted",
         "format-icons": {
             "default": ["", "", ""]

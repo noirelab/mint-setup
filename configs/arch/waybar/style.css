@@ -1,9 +1,13 @@
+/* =============================================================================
+   GLOBAL STYLES
+   ============================================================================= */
+
 * {
     border: none;
     border-radius: 0;
     font-family: "Inter", "Symbols Nerd Font", sans-serif;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     min-height: 0;
 }
 
@@ -20,47 +24,48 @@ tooltip {
     border-color: #11111b;
 }
 
-/* The "Pill" Containers */
-#workspaces, #clock, #tray, #battery, #taskbar {
-    background: #1e1e2e; /* Dark grey pill color */
+/* =============================================================================
+   PILL CONTAINERS (SHARED STYLING)
+   ============================================================================= */
+
+/* Main Containers (Left & Center focus) */
+#workspaces,
+#clock,
+#battery,
+#taskbar {
+    background: #1e1e2e;
     opacity: 0.9;
     padding: 5px 15px;
-    margin: 6px 10px; /* Floating margin */
-    border-radius: 15px; /* Rounded corners */
+    margin: 6px 10px;
+    border-radius: 15px;
     border: 1px solid #11111b;
 }
 
-
-#cpu, #memory, #temperature, #disk, #pulseaudio, #custom-power {
-    background: #1e1e2e; /* Dark grey pill color */
-    opacity: 0.9;
-    padding: 5px 10px;
-    margin: 6px 10px; /* Floating margin */
-    border-radius: 15px; /* Rounded corners */
-    border: 1px solid #11111b;
-}
-
+/* System Monitor Containers (Right focus) */
+#cpu,
+#memory,
+#custom-cpu,
+#disk,
+#pulseaudio,
 #custom-power {
-    padding: 5px 12px;
-    font-size: 16px;
+    background: #1e1e2e;
+    opacity: 0.9;
+    color: #cdd6f4;
+    padding: 5px 10px;
+    margin: 6px 10px;
+    border-radius: 15px;
+    border: 1px solid #11111b;
 }
 
-/* Taskbar specific styling */
-#taskbar button {
-    padding: 0 5px;
-    border-radius: 10px;
+/* =============================================================================
+   SPECIFIC MODULE OVERRIDES
+   ============================================================================= */
+
+#custom-cpu {
+    color: #89b4fa;
 }
 
-#taskbar button.active {
-    background-color: #313244;
-    border-bottom: 2px solid #cba6f7;
-}
-
-#taskbar button:hover {
-    background: #313244;
-}
-
-/* Workspaces specific */
+/* Workspaces */
 #workspaces button {
     padding: 0 5px;
     color: #a6adc8;
@@ -70,25 +75,80 @@ tooltip {
     color: #cba6f7;
 }
 
+/* Taskbar */
+#taskbar {
+    background: transparent; /* This stops the ghost pill from showing */
+    border: none;
+    margin: 6px 10px;
+    padding: 0;
+}
+
+/* 2. Apply the "Pill" look to the actual app buttons instead */
+#taskbar button {
+    background: #1e1e2e;
+    opacity: 0.9;
+    padding: 5px 12px; /* Adjust padding for the icon pill */
+    margin: 0 4px;      /* Spacing between multiple app icons */
+    border-radius: 15px;
+    border: 1px solid #11111b;
+    transition: all 0.3s ease;
+}
+
+/* 3. States for active/hover */
+#taskbar button.active {
+    background-color: #313244;
+    border-bottom: 2px solid #cba6f7;
+}
+
+#taskbar button:hover {
+    background: #45475a;
+}
+
+/* System Tray */
+#tray {
+    margin: 6px 10px; /* Removed background to prevent empty pill look */
+}
+
+#tray menu {
+    background: #1e1e2e;
+    color: #cdd6f4;
+}
+
 #tray > .passive {
     -gtk-icon-effect: dim;
 }
 
-/* #battery.charging, #battery.plugged {
-    color: #a6e3a1;
+/* Power Button */
+#custom-power {
+    padding: 5px 12px;
+    font-size: 16px;
+}
+/* =============================================================================
+   STABILIZED STATS (FIXED WIDTHS)
+   ============================================================================= */
+
+#custom-cpu{
+    min-width: 170px;
+    transition: none;
 }
 
-#battery.critical:not(.charging) {
-    background-color: #f38ba8;
-    color: #bf5656;
-    animation-name: blink;
-    animation-duration: 0.5s;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-} */
+#custom-gpu {
+    background: #1e1e2e;
+    opacity: 0.9;
+    color: #a6e3a1;
+    padding: 5px 15px;
+    margin: 6px 10px;
+    border-radius: 15px;
+    border: 1px solid #11111b;
+    min-width: 170px;
+    transition: none;
+}
 
-/* Base Style for the Pill */
+/* =============================================================================
+   DYNAMIC WINDOW & APP COLORS
+   ============================================================================= */
+
+/* Base Pill Style */
 #custom-window {
     background: #1e1e2e;
     color: #cdd6f4;
@@ -99,33 +159,18 @@ tooltip {
     transition: all 0.3s ease;
 }
 
-/* App-Specific Backgrounds */
-#custom-window.firefox {
-    background-color: #fab387;
-    color: #11111b;
+/* Hidden state when no window is active */
+#custom-window.empty {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
 }
 
-#custom-window.code {
-    background-color: #89dceb;
-    color: #11111b;
-}
-
-#custom-window.discord {
-    background-color: #b4befe;
-    color: #11111b;
-}
-
-#custom-window.spotify {
-    background-color: #a6e3a1;
-    color: #11111b;
-}
-
-#custom-window.kitty {
-    background-color: #cdd6f4;
-    color: #11111b;
-}
-
-#custom-window.default {
-    background: #1e1e2e;
-    color: #cdd6f4;
-}
+/* Application specific colors */
+#custom-window.firefox { background-color: #fab387; color: #11111b; }
+#custom-window.code    { background-color: #89dceb; color: #11111b; }
+#custom-window.discord { background-color: #b4befe; color: #11111b; }
+#custom-window.spotify { background-color: #a6e3a1; color: #11111b; }
+#custom-window.kitty   { background-color: #cdd6f4; color: #11111b; }
+#custom-window.default { background: #1e1e2e;        color: #cdd6f4; }
