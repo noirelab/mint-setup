@@ -218,12 +218,12 @@ if confirm "Install Dev Tools (Docker, Nvidia Toolkit, Miniconda)?"; then
         sudo systemctl enable --now docker.service
         sudo nvidia-ctk runtime configure --runtime=docker
         sudo systemctl restart docker
+        sudo usermod -aG docker $USER
     else
         # Simple Ubuntu Docker install
         sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin nvidia-container-toolkit
         sudo usermod -aG docker $USER
     fi
-    sudo usermod -aG docker $USER
 
     # Miniconda (Shared)
     if [ ! -d ~/miniconda3 ]; then
@@ -231,6 +231,10 @@ if confirm "Install Dev Tools (Docker, Nvidia Toolkit, Miniconda)?"; then
         bash ~/miniconda3_install.sh -b -u -p ~/miniconda3
         rm ~/miniconda3_install.sh
         ~/miniconda3/bin/conda init bash
+        # Also init fish if it's installed
+        if command -v fish &> /dev/null; then
+            ~/miniconda3/bin/conda init fish
+        fi
     fi
 fi
 
@@ -244,6 +248,7 @@ if [ "$DISTRO" == "arch" ]; then
 
         # Install Hyprland Basics if missing
         sudo pacman -S --noconfirm hyprland waybar rofi-wayland dunst polkit-kde-agent
+        sudo pacman -S --noconfirm pipewire pipewire-pulse pipewire-alsa wireplumber nvtop btop
 
         # Copy Configs
         mkdir -p ~/.config/hypr ~/.config/waybar ~/.config/rofi ~/.config/dunst
@@ -281,134 +286,6 @@ else
     fi
 fi
 
-install_sddm_theme() {
-    echo ":: Installing SDDM Theme and Dependencies..."
-    # 1. Install packages
-    if command -v yay &> /dev/null; then
-        yay -S --noconfirm simple-sddm-theme-2-git qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg
-    else
-        echo "Error: yay is not installed. Skipping SDDM theme."
-        return
-    fi
-
-    # 2. Configure SDDM to use the theme
-    echo ":: Configuring /etc/sddm.conf..."
-    sudo bash -c 'cat > /etc/sddm.conf <<EOF
-[Theme]
-Current=simple-sddm-2
-
-[General]
-InputMethod=qtvirtualkeyboard
-EOF'
-
-    # 3. Setup Wallpaper
-    # We look for the wallpaper relative to this script
-    WALLPAPER_SRC="./configs/common/wallpapers/wallpaper.jpg"
-    THEME_DIR="/usr/share/sddm/themes/simple-sddm-2"
-
-    if [ -f "$WALLPAPER_SRC" ]; then
-        echo ":: Copying wallpaper to SDDM theme..."
-        # Create background folder just in case
-        sudo mkdir -p "$THEME_DIR/Backgrounds"
-        # Copy to MAIN folder (where the theme actually looks)
-        sudo cp "$WALLPAPER_SRC" "$THEME_DIR/wallpaper.jpg"
-    else
-        echo "WARNING: Wallpaper not found at $WALLPAPER_SRC"
-    fi
-
-    # 4. Apply Catppuccin Colors (The Dark Grey/Lavender config)
-    echo ":: Applying Custom Colors..."
-    sudo bash -c "cat > $THEME_DIR/theme.conf <<EOF
-[General]
-ScreenWidth=\"1920\"
-ScreenHeight=\"1080\"
-FontSize=\"13\"
-KeyboardSize=\"0.4\"
-RoundCorners=\"20\"
-HourFormat=\"HH:mm\"
-DateFormat=\"dddd d MMMM\"
-
-[Background]
-Background=\"wallpaper.jpg\"
-BackgroundPlaceholder=\"\"
-BackgroundSpeed=\"\"
-PauseBackground=\"\"
-DimBackground=\"0.0\"
-CropBackground=\"true\"
-BackgroundHorizontalAlignment=\"center\"
-BackgroundVerticalAlignment=\"center\"
-
-[Colors]
-HeaderTextColor=\"#cdd6f4\"
-DateTextColor=\"#cdd6f4\"
-TimeTextColor=\"#cdd6f4\"
-FormBackgroundColor=\"#1e1e2e\"
-BackgroundColor=\"#1e1e2e\"
-DimBackgroundColor=\"#1e1e2e\"
-LoginFieldBackgroundColor=\"#181825\"
-PasswordFieldBackgroundColor=\"#181825\"
-LoginFieldTextColor=\"#cba6f7\"
-PasswordFieldTextColor=\"#cba6f7\"
-UserIconColor=\"#cba6f7\"
-PasswordIconColor=\"#cba6f7\"
-PlaceholderTextColor=\"#a6adc8\"
-WarningColor=\"#f38ba8\"
-LoginButtonTextColor=\"#cba6f7\"
-LoginButtonBackgroundColor=\"#1e1e2e\"
-SystemButtonsIconsColor=\"#cba6f7\"
-SessionButtonTextColor=\"#cba6f7\"
-VirtualKeyboardButtonTextColor=\"#cba6f7\"
-DropdownTextColor=\"#cdd6f4\"
-DropdownSelectedBackgroundColor=\"#cba6f7\"
-DropdownBackgroundColor=\"#1e1e2e\"
-HighlightTextColor=\"#1e1e2e\"
-HighlightBackgroundColor=\"#cba6f7\"
-HighlightBorderColor=\"#cba6f7\"
-HoverUserIconColor=\"#f5c2e7\"
-HoverPasswordIconColor=\"#f5c2e7\"
-HoverSystemButtonsIconsColor=\"#f5c2e7\"
-HoverSessionButtonTextColor=\"#f5c2e7\"
-HoverVirtualKeyboardButtonTextColor=\"#f5c2e7\"
-
-[Form]
-PartialBlur=\"true\"
-FullBlur=\"\"
-BlurMax=\"32\"
-Blur=\"\"
-HaveFormBackground=\"false\"
-FormPosition=\"left\"
-
-[VirtualKeyboard]
-VirtualKeyboardPosition=\"center\"
-
-[Interface]
-HideVirtualKeyboard=\"false\"
-HideSystemButtons=\"false\"
-HideLoginButton=\"false\"
-ForceLastUser=\"true\"
-PasswordFocus=\"true\"
-HideCompletePassword=\"true\"
-AllowEmptyPassword=\"false\"
-AllowUppercaseLettersInUsernames=\"false\"
-BypassSystemButtonsChecks=\"false\"
-RightToLeftLayout=\"false\"
-
-[Translation]
-TranslatePlaceholderUsername=\"\"
-TranslatePlaceholderPassword=\"\"
-TranslateLogin=\"\"
-TranslateLoginFailedWarning=\"\"
-TranslateCapslockWarning=\"\"
-TranslateSuspend=\"\"
-TranslateHibernate=\"\"
-TranslateReboot=\"\"
-TranslateShutdown=\"\"
-TranslateSessionSelection=\"\"
-TranslateVirtualKeyboardButtonOn=\"\"
-TranslateVirtualKeyboardButtonOff=\"\"
-EOF"
-}
-
 
 install_hyprlock() {
     echo ":: Setting up Lock Screen (Hyprlock & Hypridle)..."
@@ -428,7 +305,8 @@ install_hyprlock() {
         cp "$WALLPAPER_SRC" "$DEST_DIR/wallpaper.jpg"
         echo ":: Wallpaper copied to $DEST_DIR/wallpaper.jpg"
     else
-        echo "WARNING: Wallpaper source not found. Lock screen might be black."
+        echo -e "${YELLOW}WARNING: Wallpaper not found at $WALLPAPER_SRC${NC}"
+        echo -e "${YELLOW}Add a wallpaper.jpg to configs/common/wallpapers/ or update hyprlock.conf path${NC}"
     fi
 
     # 3. Skip hyprlock.conf generation - using custom config from repo
@@ -475,19 +353,20 @@ EOF
 
 # --- 6. DOTFILES (Bashrc) ---
 if confirm "Install .bashrc?"; then
+    # Backup existing .bashrc if it exists
+    if [ -f ~/.bashrc ]; then
+        cp ~/.bashrc ~/.bashrc.backup.$(date +%Y%m%d-%H%M%S)
+        echo "Existing .bashrc backed up"
+    fi
     cp "$SCRIPT_DIR/configs/common/.bashrc" ~/.bashrc
     echo "Bashrc updated."
 fi
 
-# ... inside the if [ "$DISTRO" == "arch" ] block ...
-
-if confirm "Install & Configure SDDM Theme?"; then
-    install_sddm_theme
-fi
-
-# ADD THIS:
-if confirm "Install Hyprlock & Hypridle?"; then
-    install_hyprlock
+# --- 7. HYPRLOCK (Arch Only) ---
+if [ "$DISTRO" == "arch" ]; then
+    if confirm "Install Hyprlock & Hypridle?"; then
+        install_hyprlock
+    fi
 fi
 
 echo ""
